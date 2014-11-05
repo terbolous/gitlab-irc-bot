@@ -66,8 +66,9 @@ t_app = Thread.new {
 
 Signal.trap("SIGINT") {
   App.quit!
-  bot.quit
+  Thread.new {
+    bot.quit
+  }
 }
 
 t_bot.join
-
