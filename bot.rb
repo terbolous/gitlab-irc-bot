@@ -64,11 +64,13 @@ t_app = Thread.new {
   App.start!
 }
 
-Signal.trap("SIGINT") {
+trap_block = proc {
   App.quit!
   Thread.new {
     bot.quit
   }
 }
+Signal.trap("SIGINT", &trap_block)
+Signal.trap("SIGTERM", &trap_block)
 
 t_bot.join
