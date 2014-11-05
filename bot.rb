@@ -8,7 +8,7 @@ require 'json'
 
 class App < Sinatra::Application
   class << self
-    attr_writer :ircbot
+    attr_accessor :ircbot
   end
   @@ircbot = nil
 
@@ -28,7 +28,7 @@ class App < Sinatra::Application
     user = data['push_data']['user_name']
     message = data['push_data']['commits'][0]['message'].lines.first
 
-    @@ircbot.channels[0].send("#{project_name} build #{build_status} - #{user} #{sha}: #{message}")
+    App.ircbot.channels[0].send("#{project_name} build #{build_status} - #{user} #{sha}: #{message}")
     200
   end
 
