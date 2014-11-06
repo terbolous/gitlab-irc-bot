@@ -28,7 +28,10 @@ class App < Sinatra::Application
     user = data['push_data']['user_name']
     message = data['push_data']['commits'][0]['message'].lines.first
 
-    App.ircbot.channels[0].send("#{project_name} build #{build_status} - #{user} #{sha}: #{message}")
+    commit_count = data['push_data']['total_commits_count']
+    commit_count_str = (commit_count > 1) ? "(#{commit_count} commits) " : ""
+
+    App.ircbot.channels[0].send("#{project_name} build #{build_status} - #{user} #{commit_count_str}#{sha}: #{message}")
     200
   end
 
