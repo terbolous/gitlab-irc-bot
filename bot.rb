@@ -57,6 +57,7 @@ bot = Cinch::Bot.new do
     c.ssl.use  = true
   end
 end
+bot.loggers.first.level = :info
 
 App.ircbot = bot
 
