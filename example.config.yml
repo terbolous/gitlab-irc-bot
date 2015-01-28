@@ -14,3 +14,6 @@ irc:
   :nick: git-bot
   :ssl:
     :use: true
+
+sinatra:
+  port: 4567

@@ -19,6 +19,7 @@ class App < Sinatra::Application
 
   configure do
     set :bind, '0.0.0.0'
+    set :port, $config['sinatra']['port']
     disable :traps
   end
 
