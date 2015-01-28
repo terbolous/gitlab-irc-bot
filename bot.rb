@@ -5,6 +5,11 @@ require 'bundler/setup'
 require 'sinatra/base'
 require 'cinch'
 require 'json'
+require 'yaml'
+require 'digest/sha2'
+
+$config = YAML.load_file('config.yml')
+channels = ($config['travis'].values + $config['gitlab'].values).map { |c| c['channel'] }
 
 class App < Sinatra::Application
   class << self
@@ -19,20 +24,55 @@ class App < Sinatra::Application
 
   post '/gitlab-ci' do
     data = JSON.parse request.body.read
-    logger.info data
 
     project_name = data['project_name']
-    build_status = format_status data['build_status']
+    if $config['gitlab'].include? project_name
+      build_status = format_status data['build_status']
 
-    sha = data['sha'][0..7]
-    user = data['push_data']['user_name']
-    message = data['push_data']['commits'][0]['message'].lines.first
+      sha = data['sha'][0..7]
+      branch = data['ref']
+      user = data['push_data']['user_name']
+      message = data['push_data']['commits'][0]['message'].lines.first
 
-    commit_count = data['push_data']['total_commits_count']
-    commit_count_str = (commit_count > 1) ? "(#{commit_count} commits) " : ""
+      commit_count = data['push_data']['total_commits_count']
+      commit_count_str = (commit_count > 1) ? "(#{commit_count} commits) " : ""
 
-    App.ircbot.channels[0].send("#{project_name} build #{build_status} - #{user} #{commit_count_str}#{sha}: #{message}")
+      ch = $config['gitlab'][project_name]['channel']
+
+      App.ircbot.Channel(ch).send("#{project_name} (#{branch}) build #{build_status} - #{user} #{commit_count_str}#{sha}: #{message}")
+    end
     200
+  end
+
+  post '/travis-ci' do
+    data = JSON.parse request.body.read
+
+    if travis_valid_request?
+      owner = data['repository']['owner_name']
+      project_name = data['repository']['name']
+      build_status = format_status data['status'], data['status_message']
+
+      sha = data['commit'][0..7]
+      branch = data['branch']
+      user = data['author_name']
+      message = data['message'].lines.first
+
+      ch = $config['travis'][repo_slug]['channel']
+
+      App.ircbot.Channel(ch).send("#{owner} / #{project_name} (#{branch}) build #{build_status} - #{user} #{sha}: #{message}")
+    end
+    200
+  end
+
+  def format_travis_status(status, status_message)
+    c = :red
+    if status == 0
+      c = :green
+    elsif status_message == "Pending"
+      c = :yellow
+    end
+
+    Cinch::Formatting.format(c, status_message)
   end
 
   def format_status(str)
@@ -46,15 +86,30 @@ class App < Sinatra::Application
 
     Cinch::Formatting.format(colour, str)
   end
+
+  def travis_valid_request?
+    slug = repo_slug
+    if $config['travis'].include? slug
+      token = $config['travis'][slug]['token']
+      digest = Digest::SHA2.new.update("#{slug}#{token}")
+      return digest.to_s == authorization
+    end
+    false
+  end
+
+  def authorization
+    env['HTTP_AUTHORIZATION']
+  end
+
+  def repo_slug
+    env['HTTP_TRAVIS_REPO_SLUG']
+  end
 end
 
 bot = Cinch::Bot.new do
   configure do |c|
-    c.server   = "irc.elvum.net"
-    c.port     = 6697
-    c.channels = ["#notrr"]
-    c.nick     = "git"
-    c.ssl.use  = true
+    c.load! $config['irc']
+    c.channels = channels
   end
 end
 bot.loggers.first.level = :info

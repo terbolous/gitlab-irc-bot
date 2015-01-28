@@ -1,0 +1,16 @@
+travis:
+  "name/repo":
+    auth_token: "abc123"
+    channel: "#test"
+
+gitlab:
+  "name / repo":
+    channel: "#test"
+
+# See Cinch::Configuration::Bot for settings
+irc:
+  :server: irc.example.com
+  :port: 6667
+  :nick: git-bot
+  :ssl:
+    :use: true
