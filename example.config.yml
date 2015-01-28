@@ -1,6 +1,6 @@
 travis:
   "name/repo":
-    auth_token: "abc123"
+    token: "abc123"
     channel: "#test"
 
 gitlab:

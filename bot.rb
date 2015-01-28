@@ -46,7 +46,7 @@ class App < Sinatra::Application
   end
 
   post '/travis-ci' do
-    data = JSON.parse request.body.read
+    data = JSON.parse params[:payload]
 
     if travis_valid_request?
       owner = data['repository']['owner_name']
