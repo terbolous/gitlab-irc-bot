@@ -51,7 +51,7 @@ class App < Sinatra::Application
     if travis_valid_request?
       owner = data['repository']['owner_name']
       project_name = data['repository']['name']
-      build_status = format_status data['status'], data['status_message']
+      build_status = format_travis_status data['status'], data['status_message']
 
       sha = data['commit'][0..7]
       branch = data['branch']
