@@ -23,21 +23,22 @@ class App < Sinatra::Application
     disable :traps
   end
 
-  post '/gitlab-ci' do
+  post '/commit' do
     data = JSON.parse request.body.read
 
     project_name = data['repository']['name']
     if $config['gitlab'].include? project_name
 
-      last_commit = data['commits'][0]
-      user = last_commit['author']['name']
-      message = last_commit['message'].lines.first
-      commit_sha = last_commit['id'][0..8]
-      commit_url = last_commit['url']
+      commit = data['commits'][0]
+      commit_message = commit['message'].gsub(/\n/," ")
+      user = commit['author']['name']
+      message = commit['message'].lines.first
+      commit_sha = commit['id'][0..8]
+      commit_url = commit['url']
 
 
       ch = $config['gitlab'][project_name]['channel']
-      send = "#{project_name} New Commit (#{commit_sha}): #{message} - #{commit_url}"
+      send "[#{data['repository']['name'].capitalize}] #{user} | #{commit_message} | View Commit: #{commit_url}"
 
       App.ircbot.Channel(ch).send(send)
     end
