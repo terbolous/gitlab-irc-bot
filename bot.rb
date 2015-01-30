@@ -26,21 +26,20 @@ class App < Sinatra::Application
   post '/gitlab-ci' do
     data = JSON.parse request.body.read
 
-    project_name = data['project_name']
+    project_name = data['repository']['name']
     if $config['gitlab'].include? project_name
-      build_status = format_status data['build_status']
 
-      sha = data['sha'][0..7]
-      branch = data['ref']
-      user = data['push_data']['user_name']
-      message = data['push_data']['commits'][0]['message'].lines.first
+      last_commit = data['commits'][0]
+      user = last_commit['author']['name']
+      message = last_commit['message'].lines.first
+      commit_sha = last_commit['id'][0..8]
+      commit_url = last_commit['url']
 
-      commit_count = data['push_data']['total_commits_count']
-      commit_count_str = (commit_count > 1) ? "(#{commit_count} commits) " : ""
 
       ch = $config['gitlab'][project_name]['channel']
+      send = "#{project_name} New Commit (#{commit_sha}): #{message} - #{commit_url}"
 
-      App.ircbot.Channel(ch).send("#{project_name} (#{branch}) build #{build_status} - #{user} #{commit_count_str}#{sha}: #{message}")
+      App.ircbot.Channel(ch).send(send)
     end
     200
   end
